@@ -6,6 +6,9 @@ const partials = require('express-partials')
 const cookieParser = require('cookie-parser')
 const session = require('express-session')
 const RedisStore = require('connect-redis')(session)
+const bodyParser = require('body-parser')
+const csrf = require('csurf')
+const utils = require('./middleware/utilities')
 const errorhandlers = require('./middleware/errorhandlers')
 const log = require('./middleware/log')
 
@@ -22,32 +25,33 @@ const redisClient = redis.createClient({
 // INIT EXPRESS FUNCTION
 const app = express()
 
+// LAYOUT AND VIEWS
+app.set('view options', { defaultLayout: 'Layout' })
+app.set('view engine', 'ejs')
 
 // UTILS
 app.use(partials())
-app.use(cookieParser('secret'))
 app.use(log.logger)
+app.use(express.static(__dirname + '/static'))
+app.use(cookieParser('secret'))
 app.use(session({
     secret: 'secret',
     resave: true,
     saveUninitialized: true,
     store: new RedisStore ({ client: redisClient })
-    // store: new RedisStore({ url: 'redis://localhost' })
 }))
-
-app.set('view options', { defaultLayout: 'Layout' })
-app.set('view engine', 'ejs')
-
-
-// STATIC DIRECTORY PATH
-app.use(express.static(__dirname + '/static'))
-
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(csrf())
+app.use(utils.csrf)
+app.use(utils.authenticated)
 
 // ROUTES
 app.get('/', routes.index)
 app.get('/login', routes.login)
 app.post('/login', routes.loginProcess)
 app.get('/chat', routes.chat)
+app.get('/logout', routes.logOut)
 
 app.use(errorhandlers.notFound)
 app.use(errorhandlers.error)
