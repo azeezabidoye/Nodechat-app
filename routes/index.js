@@ -16,7 +16,7 @@ function index (req, res) {
 // LOGIN
 function login (req, res) {
     console.log(req.body)
-    res.send(req.body.username, req.body.password)
+    res.render('index.ejs', {title: "Login", username: req.body.username,password: req.body.password});    
 }
 
 // LOGIN-IN
